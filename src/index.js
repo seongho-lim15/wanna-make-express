@@ -32,8 +32,7 @@ const app = http.createServer((req, res) => {
         res.writeHead(302, {
             'Location': '/'
         });
-        res.end()
-        return;
+        return res.end();
     }
 
     // 파일 읽기
@@ -56,8 +55,7 @@ const app = http.createServer((req, res) => {
         res.writeHead(302, {
             'Location': '/'
         });
-        res.end();
-        return;
+        return res.end();
     }
 
     // 메인 화면
