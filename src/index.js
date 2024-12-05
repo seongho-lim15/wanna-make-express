@@ -1,48 +1,50 @@
-const http = require('http');
-const fs = require('fs');
+const http = require('http')
+const fs = require('fs')
 
-console.log('Happy developing ✨')
+const log = console.log;
 
-const log = console.log
+const app = http.createServer((req, res) => {
+    const url = req.url
+    const method = req.method || 'GET'
 
-const server = http.createServer((req, res) => {
-    const url = req.url;
-    const method = req.method;
+    log('url : ', url)
+    log('method : ', method)
 
-    if (url === '/') {
-        res.write('<html>');
-        res.write('<head><title>Enter Message</title><head>');
-        res.write(
-            '<body><form action="/message" method="POST"><input type="text" name="message"><button type="submit">Send</button></form></body>'
-        );
-        res.write('</html>');
-        return res.end();
-    }
-
-    if (url === '/message' && method === 'POST') {
+    if(method === 'POST' && url === '/add-product') {
         const body = [];
-        req.on('data', chunk => {
-            console.log('chunk :', chunk);
-            body.push(chunk);
+
+        req.on('data', (chunk) => {
+            log('chunk : ', chunk)
+            body.push(chunk)
+        })
+
+        req.on('end', () => {
+            const data = Buffer.concat(body).toString('utf8')
+            log('end data : ', data)
+            const [key, value] = data.split('=');
+            fs.writeFileSync(`./${key}.txt`, value)
+            console.log('file writing ended')
+        })
+
+        res.writeHead(302, {
+            'Location': '/'
         });
-        return req.on('end', () => {
-            const parsedBody = Buffer.concat(body).toString();
-            const message = parsedBody.split('=')[1];
-            log('message : ', message)
-            fs.writeFile('message.txt', message, err => {
-                res.statusCode = 302;
-                res.setHeader('Location', '/');
-                return res.end();
-            });
-        });
+        res.end()
     }
 
-    res.setHeader('Content-Type', 'text/html');
-    res.write('<html>');
-    res.write('<head><title>My First Page</title><head>');
-    res.write('<body><h1>Hello from my Node.js Server!</h1></body>');
-    res.write('</html>');
-    res.end();
+    if(method === 'GET' && url === '/') {
+        res.write('<html lang="en"><body>' +
+            '<h1>hello</h1>' +
+            '<form action="/add-product" method="POST">' +
+            '<input name="input"></input>' +
+            '<button type="submit">click me!</button>' +
+            '</form>' +
+            '</body></html>');
+        res.end();
+    }
+
 })
 
-server.listen(8080);
+app.listen(3000, () => {
+    console.log('Server started on port 3000')
+})
