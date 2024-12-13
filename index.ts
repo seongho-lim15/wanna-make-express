@@ -28,49 +28,56 @@ const app = http.createServer((req: any, res: any) => {
     req.on('end', () => {
       const data = Buffer.concat(body).toString('utf8');
       const [key, value] = data.split('=');
-      const filePath = path.join(process.cwd(), 'src', 'data', `${key}.json`);
+      const filePath = path.join(process.cwd(), 'src', 'data', `data.json`);
 
       // 파일 읽기 이벤트 처리
-      fileEvent.on('readFile', (filePath: string, inputValue: string) => {
-        fs.readFile(filePath, 'utf8', (err: any, fileData: string) => {
-          console.log('data : ', fileData);
-          console.log('data type : ', typeof fileData);
+      fileEvent.on(
+        'readFile',
+        (
+          filePath: string,
+          inputKey: string,
+          inputValue: string,
+          writeCb: (writePath: string, writeValue: string) => void
+        ) => {
+          fs.readFile(filePath, 'utf8', (err: any, fileData: string) => {
+            console.log('data : ', fileData);
+            console.log('data type : ', typeof fileData);
 
-          let newData = [];
-          let objFileData;
-          try {
-            objFileData = JSON.parse(fileData);
-          } catch (err) {
-            console.error('parsing err : ', err);
-          }
-          console.log('objFileData : ', objFileData);
-          console.log('objFileData typeof : ', typeof objFileData);
+            const newData = [];
+            try {
+              newData.push(...JSON.parse(fileData));
+            } catch (err) {
+              console.error('parsing err : ', err);
+            }
+            newData.push({
+              id: Math.random(),
+              [inputKey]: decodeURI(inputValue),
+            });
 
-          if (typeof objFileData === 'object') {
-            newData = objFileData;
-          }
-          const id = Math.floor(Math.random() * 100);
-          newData.push({ id: id, value: inputValue });
-
-          const strNewData = JSON.stringify(newData);
-          // 파일 쓰기 이벤트 시작
-          fileEvent.emit('writeFile', filePath, strNewData);
-        });
-      });
-
-      // 파일 쓰기 이벤트 처리
-      fileEvent.on('writeFile', (filePath: string, value: string) => {
-        fs.writeFile(filePath, value, (err: any) => {
-          if (err) {
-            console.error('Error writing file:', err);
-            return;
-          }
-          console.log('File writing ended.');
-        });
-      });
+            const strNewData = JSON.stringify(newData);
+            // 파일 쓰기 이벤트 시작
+            writeCb(filePath, strNewData);
+          });
+        }
+      );
 
       // 파일 읽기 이벤트 시작
-      fileEvent.emit('readFile', filePath, value);
+      fileEvent.emit(
+        'readFile',
+        filePath,
+        key,
+        value,
+        (writePath: string, writeData: string) => {
+          // 파일 쓰기 이벤트 처리
+          fs.writeFile(writePath, writeData, (err: any) => {
+            if (err) {
+              console.error('Error writing file:', err);
+              return;
+            }
+            console.log('File writing ended.');
+          });
+        }
+      );
     });
 
     res.writeHead(302, {
