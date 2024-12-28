@@ -1,40 +1,51 @@
+import { IncomingMessage, ServerResponse } from 'node:http';
+
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const rAndWItem = require('./src/utils/readAndWriteItem');
+const router = require('./src/router');
+import { Router } from './src/class/router';
 
 const log = console.log;
 
-const app = http.createServer((req: any, res: any) => {
+const app = http.createServer((req: IncomingMessage, res: ServerResponse) => {
   const url = req.url;
   const method = req.method || 'GET';
 
   log('url : ', url);
   log('method : ', method);
 
+  const selectedRouter = router.find((item: Router)=>{
+    return item.method === method && item.url === url ;
+  });
+
+  // 선택된 라우터의 핸들러 호출
+  selectedRouter && selectedRouter.handler()
+
   // 파일 생성
-  if (method === 'POST' && url === '/add-product') {
-    const body: Uint8Array[] = [];
-
-    req.on('data', (chunk: any) => {
-      log('chunk : ', chunk);
-      body.push(chunk);
-    });
-
-    req.on('end', () => {
-      const data = Buffer.concat(body).toString('utf8');
-      const [key, value] = data.split('=');
-      const filePath = path.join(process.cwd(), 'src', 'data', `data.json`);
-
-      rAndWItem(filePath, key, value);
-    });
-
-    res.writeHead(302, {
-      Location: '/',
-    });
-    return res.end();
-  }
+  // if (method === 'POST' && url === '/add-product') {
+  //   const body: Uint8Array[] = [];
+  //
+  //   req.on('data', (chunk: any) => {
+  //     log('chunk : ', chunk);
+  //     body.push(chunk);
+  //   });
+  //
+  //   req.on('end', () => {
+  //     const data = Buffer.concat(body).toString('utf8');
+  //     const [key, value] = data.split('=');
+  //     const filePath = path.join(process.cwd(), 'src', 'data', `db.json`);
+  //     // 입력된 데이터의 키, 값, 저장할 파일 위치를 파라미터로 전달
+  //     rAndWItem(filePath, key, value);
+  //   });
+  //
+  //   res.writeHead(302, {
+  //     Location: '/',
+  //   });
+  //   return res.end();
+  // }
 
   // 파일 읽기
   if (method === 'GET' && url === '/get-product') {
